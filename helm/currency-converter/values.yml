@@ -1,0 +1,15 @@
+replicaCount: 1
+
+image:
+  repository: yourdockerhub/currency-converter
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  name: currency-converter
+  type: LoadBalancer
+  port: 80
+  targetPort: 8000
+
+app:
+  name: currency-converter

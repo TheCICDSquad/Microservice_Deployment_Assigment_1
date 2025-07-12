@@ -30,8 +30,8 @@ Infrastructure Provisioning
 1. Initialize Terraform:
 
 bash
-cd terraform
-terraform init
+ cd terraform
+ terraform init
 2. Deploy to AWS:
 
 bash
