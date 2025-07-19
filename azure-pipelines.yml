@@ -5,24 +5,43 @@ pool:
   name: 'Linux_Agent'  # Your pool with Python 3.12.3
 
 steps:
-# 1. Checkout your code from GitHub
+# 1. Force clean checkout of your repository
 - checkout: self
+  clean: true
   displayName: 'Checkout repository'
 
-# 2. Verify repository structure (for debugging)
+# 2. Verify the exact repository structure
 - script: |
-    ls -R
+    echo "Current working directory:"
     pwd
+    echo "Repository contents:"
+    ls -R
+    echo "Checking for application files..."
+    find . -name main.py -o -name requirements.txt
+  displayName: 'Verify repository structure'
+
+# 3. Run application with verified paths
+- script: |
+    # Find the actual path to your application
+    APP_PATH=$(find . -path "*/app/main.py" -printf '%h\n' | head -1)
+    
+    if [ -z "$APP_PATH" ]; then
+      echo "##[error]Could not find application directory"
+      exit 1
+    fi
+    
+    echo "Found application at: $APP_PATH"
+    
+    # Setup virtual environment
     python3.12 -m venv .venv
     source .venv/bin/activate
     
-    # Install requirements directly using full path
-    pip install -r $(System.DefaultWorkingDirectory)/Microservice_Deployment_Assignment_1/app/requirements.txt
+    # Install requirements
+    pip install -r "$APP_PATH/requirements.txt"
     
-    # Run the application using full path
-    python $(System.DefaultWorkingDirectory)/Microservice_Deployment_Assignment_1/app/main.py
-  displayName: 'Verify repository structure'
-
+    # Run application
+    python "$APP_PATH/main.py"
+  displayName: 'Run FastAPI application'
 # # 3. Setup Python environment
 # - script: |
 #     # Create virtual environment
