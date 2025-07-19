@@ -5,6 +5,11 @@ pool:
   name: 'Linux_Agent'  # Your pool with Python 3.12.3
 
 steps:
+- script: |
+    python -m venv .venv
+    source .venv/bin/activate
+    pip install -r Microservice_Deployment_Assigment_1/app/requirements.txt
+    python Microservice_Deployment_Assigment_1/app/main.py
 # 1. Install requirements and run app
 - script: |
     cd Microservice_Deployment_Assigment_1/app
