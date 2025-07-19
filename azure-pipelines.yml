@@ -1,12 +1,14 @@
 trigger:
-  - main  # or your main branch name
+  - main
 
 pool:
   name: Linux_Agent
 
 variables:
-  DOCKER_REPO: 'https://hub.docker.com/repository/docker/sashangykumar456/petclinic'  # Change this
+  DOCKER_REPO: 'sashangykumar456/petclinic'  # Just the repo name
   IMAGE_TAG: '$(Build.BuildId)'
+  DOCKERFILE_PATH: 'Microservice_Deployment_Assigment_1/DockerFile/'
+  APP_PATH: 'Microservice_Deployment_Assigment_1/app'
 
 steps:
   - script: |
@@ -17,8 +19,9 @@ steps:
     displayName: 'Install Python via APT'
 
   - script: |
-      python --version
-    displayName: 'Verify Python Installed'
+      cd $(APP_PATH)
+      pip3 install -r requirements.txt  # Optional: only if needed
+    displayName: 'Install Python dependencies (if any)'
 
   - task: DockerInstaller@0
     displayName: 'Install Docker CLI'
@@ -27,15 +30,12 @@ steps:
     displayName: 'Login to Docker Hub'
     inputs:
       command: login
-      containerRegistry: 'dockerHubService'  # OR use username/password below
-
-  # If you're not using a Docker service connection, use this instead:
-  # - script: echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USERNAME) --password-stdin
-  #   displayName: 'Docker Login (Manual)'
+      containerRegistry: 'dockerHubService'  # Replace with your Docker service connection
 
   - script: |
+      cd $(DOCKERFILE_PATH)
       docker build -t $(DOCKER_REPO):$(IMAGE_TAG) .
-    displayName: 'Build Docker Image'
+    displayName: 'Build Docker Image from Dockerfile path'
 
   - script: |
       docker push $(DOCKER_REPO):$(IMAGE_TAG)
