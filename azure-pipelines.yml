@@ -2,73 +2,50 @@ trigger:
 - main
 
 variables:
-  pythonVersion: '3.10'  # Using stable LTS version
   appDirectory: 'Microservice_Deployment_Assigment_1/app'
+  dockerImageName: 'your-python-app'
 
 pool:
-  name: 'Linux_Agent'
+  name: 'Linux_Agent'  # Your pool with Python 3.12.3
 
 steps:
-# Step 1: Try system Python first
+# Step 1: Verify and use existing Python
 - script: |
-    # Check for existing Python installations
-    if command -v python3 &> /dev/null; then
-      echo "Using existing Python: $(python3 --version)"
-      python3 -m pip install --upgrade pip
-      exit 0
-    else
-      exit 1
-    fi
-  displayName: 'Check for existing Python'
-  continueOnError: true
-
-# Step 2: Install Python from deadsnakes PPA (Ubuntu)
-- script: |
-    sudo apt-get update
-    sudo apt-get install -y software-properties-common
-    sudo add-apt-repository ppa:deadsnakes/ppa -y
-    sudo apt-get update
-    sudo apt-get install -y python$(pythonVersion) python$(pythonVersion)-venv python3-pip
-    python$(pythonVersion) --version
-  displayName: 'Install Python via PPA'
-  condition: failed()
-  env:
-    DEBIAN_FRONTEND: noninteractive
-
-# Step 3: Fallback to manual download (no compilation)
-- script: |
-    wget https://www.python.org/ftp/python/3.10.13/Python-3.10.13.tar.xz
-    tar xf Python-3.10.13.tar.xz
-    cd Python-3.10.13
-    ./configure --enable-optimizations --with-ensurepip=install
-    make
-    sudo make altinstall
-    python3.10 --version
-  displayName: 'Install Python from source'
-  condition: failed()
-  env:
-    DEBIAN_FRONTEND: noninteractive
-
-# Step 4: Verify Python installation
-- script: |
-    python$(pythonVersion) --version || python3 --version
+    echo "Using pre-installed Python:"
+    python3 --version
     python3 -m pip install --upgrade pip
-  displayName: 'Verify Python'
+  displayName: 'Verify Python installation'
 
-# Step 5: Install dependencies and run application
+# Step 2: Install dependencies
 - script: |
     cd $(appDirectory)
     pip install -r requirements.txt
-    python main.py
+  displayName: 'Install dependencies'
+
+# Step 3: Run your application
+- script: |
+    cd $(appDirectory)
+    python main.py  # or your specific entry point
   displayName: 'Run application'
 
-# Optional Docker steps if needed
+# Step 4: Build Docker image
 - task: Docker@2
   displayName: 'Build Docker image'
   inputs:
     command: 'build'
-    repository: 'your-app-name'
+    repository: $(dockerImageName)
     dockerfile: '$(appDirectory)/Dockerfile'
     tags: |
       latest
-  condition: succeeded()
+      $(Build.BuildId)
+
+# Step 5: Push Docker image (optional)
+- task: Docker@2
+  displayName: 'Push Docker image'
+  inputs:
+    command: 'push'
+    repository: $(dockerImageName)
+    tags: |
+      latest
+      $(Build.BuildId)
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
