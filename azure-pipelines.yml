@@ -1,34 +1,29 @@
 trigger:
   branches:
     include:
-      - main  # Or your working branch
+      - main
 
 pool:
   name: Linux_Agent
 
 variables:
-  dockerRegistryServiceConnection: 'dockerHubService'  # Azure DevOps service connection to ACR
-  imageRepository: 'my-python-app'   # Docker image name
-  containerRegistry: '<your-registry-name>.azurecr.io'  # ACR hostname
+  dockerRegistryServiceConnection: 'dockerHubService'  # Docker Hub service connection
+  imageRepository: 'petclinic'                         # Docker image name
+  containerRegistry: 'docker.io'                       # Docker Hub
   tag: '$(Build.BuildId)'
 
 stages:
-- stage: Build
-  displayName: Build and Package
+- stage: BuildAndPush
+  displayName: Build and Push Docker Image
   jobs:
-  - job: BuildDockerImage
-    displayName: Build Docker Image
+  - job: DockerJob
+    displayName: Docker Build and Push
     steps:
 
     - script: |
+        echo "Using Python inside the Docker build context"
         python3 --version
-        pip3 --version
-      displayName: 'Check system Python version'
-
-    - script: |
-        cd Microservice_Deployment_Assigment_1/app/
-        pip3 install -r requirements.txt
-      displayName: 'Install Python Dependencies'
+      displayName: 'Check Python on Agent (optional)'
 
     - task: Docker@2
       displayName: 'Build and Push Docker Image'
