@@ -5,23 +5,26 @@ pool:
   name: Linux_Agent
 
 variables:
-  DOCKER_REPO: 'sashangykumar456/petclinic'  # Just the repo name
+  DOCKER_REPO: 'sashangykumar456/petclinic'
   IMAGE_TAG: '$(Build.BuildId)'
-  DOCKERFILE_PATH: 'Microservice_Deployment_Assigment_1/DockerFile/'
+  DOCKERFILE_PATH: 'Microservice_Deployment_Assigment_1'
   APP_PATH: 'Microservice_Deployment_Assigment_1/app'
 
 steps:
+  - checkout: self   # 
+
   - script: |
       sudo apt update
-      sudo apt install -y python3 python3-pip
-      python3 --version
-      pip3 --version
-    displayName: 'Install Python via APT'
+      sudo apt install -y python3 python3-pip python3-venv
+    displayName: 'Install Python & venv'
 
   - script: |
       cd $(APP_PATH)
-      pip3 install -r requirements.txt  # Optional: only if needed
-    displayName: 'Install Python dependencies (if any)'
+      python3 -m venv venv
+      source venv/bin/activate
+      pip install --upgrade pip
+      pip install -r requirements.txt
+    displayName: 'Install Python dependencies in virtualenv'
 
   - task: DockerInstaller@0
     displayName: 'Install Docker CLI'
@@ -30,12 +33,12 @@ steps:
     displayName: 'Login to Docker Hub'
     inputs:
       command: login
-      containerRegistry: 'dockerHubService'  # Replace with your Docker service connection
+      containerRegistry: 'dockerHubService'
 
   - script: |
       cd $(DOCKERFILE_PATH)
       docker build -t $(DOCKER_REPO):$(IMAGE_TAG) .
-    displayName: 'Build Docker Image from Dockerfile path'
+    displayName: 'Build Docker Image'
 
   - script: |
       docker push $(DOCKER_REPO):$(IMAGE_TAG)
