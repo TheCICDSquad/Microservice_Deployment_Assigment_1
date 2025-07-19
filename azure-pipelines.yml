@@ -8,7 +8,8 @@ variables:
   DOCKER_REPO: 'sashangykumar456/petclinic'
   IMAGE_TAG: '$(Build.BuildId)'
   DOCKERFILE_PATH: 'Microservice_Deployment_Assigment_1'
-  APP_PATH: 'Microservice_Deployment_Assigment_1/app'
+  APP_PATH: 'Microservice_Deployment_Assigment_1/app/requirments.txt'
+
 
 steps:
   - checkout: self   # Required to clone your GitHub repo into the agent workspace
