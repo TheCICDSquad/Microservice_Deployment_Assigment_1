@@ -8,6 +8,8 @@ variables:
   dockerRegistryServiceConnection: 'dockerHubService'
   # Tag to give the Docker image
   tag: '$(Build.BuildId)'
+  pythonVersion: '3.10'  # Using stable LTS version
+  appDirectory: 'Microservice_Deployment_Assigment_1/app'
 
 pool:
   name: 'Linux_Agent'
