@@ -5,38 +5,28 @@ pool:
   name: 'Linux_Agent'  # Your pool with Python 3.12.3
 
 steps:
-# 1. Verify repository structure
+# 1. Create virtual environment (no sudo needed)
 - script: |
-    ls -R
-  displayName: 'Check repository structure'
+    python3.12 -m venv .venv --without-pip
+    source .venv/bin/activate
+    
+    # Install pip manually
+    curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+    python3.12 get-pip.py --user
+    rm get-pip.py
+  displayName: 'Create virtual environment'
 
-# 2. Run application (adjust path according to actual structure)
+# 2. Install dependencies and run app
 - script: |
-    # Find and use existing Python (3.12.3)
-    python3.12 --version
+    source .venv/bin/activate
+    cd app  # or your correct path
     
-    # Option 1: If files are in root/Microservice_Deployment_Assigment_1/app/
-    if [ -d "Microservice_Deployment_Assigment_1/app" ]; then
-      cd Microservice_Deployment_Assigment_1/app
-      python3.12 -m pip install -r requirements.txt --user
-      python3.12 main.py
+    # Install requirements
+    python3.12 -m pip install -r requirements.txt
     
-    # Option 2: If files are directly in root/app/
-    elif [ -d "app" ]; then
-      cd app
-      python3.12 -m pip install -r requirements.txt --user
-      python3.12 main.py
-    
-    # Option 3: If files are in root/
-    elif [ -f "requirements.txt" ]; then
-      python3.12 -m pip install -r requirements.txt --user
-      python3.12 main.py
-    
-    else
-      echo "##[error]Could not find application files"
-      exit 1
-    fi
-  displayName: 'Run Python application'
+    # Run application
+    python3.12 main.py
+  displayName: 'Run FastAPI application'
 
 # 2. Docker build (only if you need it)
 - task: Docker@2
