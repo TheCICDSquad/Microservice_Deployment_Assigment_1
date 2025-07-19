@@ -1,39 +1,37 @@
 trigger:
-  branches:
-    include:
-      - main  
+  - main  # or your target branch
+
 pool:
-  name: Linux_Agent
+  name: Linux_Agent  # Your self-hosted agent pool name
 
 variables:
-  imageName: sashangykumar456/python
-  imageTag: latest
-  imageFullName: $(imageName):$(imageTag)
+  DOCKER_IMAGE_NAME: fastapi-app
+  DOCKER_TAG: latest
+  DOCKER_REGISTRY: sashangykumar456  # replace if pushing to Docker Hub
 
-stages:
-  - stage: BuildAndPush
-    jobs:
-      - job: BuildAndPushDockerImage
-        steps:
+steps:
+  - checkout: self
 
-          # Optional: Show current directory structure for debugging
-          - script: |
-              echo "Showing repo structure:"
-              ls -R
-            displayName: "Debug: List files"
+  - script: |
+      echo "🛠️ Changing to app directory..."
+      cd app
+      echo "🐳 Building Docker image..."
+      docker build -t $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):$(DOCKER_TAG) .
+    displayName: 'Build Docker Image'
 
-          # Login to Docker Hub
-          - script: |
-              echo "$(DOCKER_PASSWORD)" | docker login -u "$(DOCKER_USERNAME)" --password-stdin
-            displayName: "Docker Login"
+  # Optional: Docker login if pushing to Docker Hub
+  - script: |
+      echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USERNAME) --password-stdin
+    displayName: 'Docker Login'
+    condition: and(succeeded(), ne(variables['DOCKER_USERNAME'], ''))
 
-          # Build Docker image (assumes Dockerfile is under /Microservice_Deployment_Assigment_1/app/)
-          - script: |
-              cd Microservice_Deployment_Assigment_1/app/
-              docker build -t $(imageFullName) .
-            displayName: "Build Docker Image"
+  # Optional: Push to Docker Hub
+  - script: |
+      docker push $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):$(DOCKER_TAG)
+    displayName: 'Push Docker Image'
+    condition: and(succeeded(), ne(variables['DOCKER_USERNAME'], ''))
 
-          # Push Docker image to Docker Hub
-          - script: |
-              docker push $(imageFullName)
-            displayName: "Push Docker Image"
+  # Optional: Run Container (for test purpose only)
+  - script: |
+      docker run -d -p 8000:8000 $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):$(DOCKER_TAG)
+    displayName: 'Run Docker Container'
