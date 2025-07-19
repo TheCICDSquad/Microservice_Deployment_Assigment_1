@@ -2,56 +2,54 @@ trigger:
 - main
 
 variables:
-  imageName: 'your-python-app'
-  dockerRegistryServiceConnection: 'your-docker-registry-service-connection'
-  tag: '$(Build.BuildId)'
-  pythonVersion: '3.10'  # Using a stable LTS version instead of 3.x
+  pythonVersion: '3.10'  # Stable Python version
+  appDirectory: 'Microservice_Deployment_Assigment_1/app'
+  dockerImageName: 'your-python-app'
 
 pool:
   name: 'Linux_Agent'
 
 steps:
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: '$(pythonVersion)'
-    addToPath: true
-    architecture: 'x64'
-
-# Alternative Python installation if the above fails
+# Step 1: Install Python with proper dependencies
 - script: |
     sudo apt-get update
     sudo apt-get install -y python$(pythonVersion) python$(pythonVersion)-dev python3-pip
     sudo update-alternatives --install /usr/bin/python python /usr/bin/python$(pythonVersion) 1
     sudo update-alternatives --set python /usr/bin/python$(pythonVersion)
-    python --version
-  displayName: 'Install Python (fallback)'
-  condition: failed()
-
-- script: |
     python -m pip install --upgrade pip
-    pip install -r requirements.txt
-  displayName: 'Install dependencies'
+    python --version
+  displayName: 'Install Python $(pythonVersion)'
 
+# Step 2: Install application dependencies
 - script: |
-    python -m pytest
-  displayName: 'Run tests'
+    cd $(appDirectory)
+    pip install -r requirements.txt
+  displayName: 'Install Python dependencies'
 
+# Step 3: Run the application (modify as needed)
+- script: |
+    cd $(appDirectory)
+    python main.py  # or your entrypoint script
+  displayName: 'Run Python application'
+
+# Step 4: Build Docker image (if needed)
 - task: Docker@2
   displayName: 'Build Docker image'
   inputs:
     command: 'build'
-    repository: $(imageName)
-    dockerfile: '**/Dockerfile'
+    repository: $(dockerImageName)
+    dockerfile: '$(appDirectory)/Dockerfile'  # assuming Dockerfile is in app dir
     tags: |
-      $(tag)
       latest
+      $(Build.BuildId)
 
+# Step 5: Push Docker image (optional)
 - task: Docker@2
   displayName: 'Push Docker image'
   inputs:
     command: 'push'
-    repository: $(imageName)
+    repository: $(dockerImageName)
     tags: |
-      $(tag)
       latest
+      $(Build.BuildId)
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
