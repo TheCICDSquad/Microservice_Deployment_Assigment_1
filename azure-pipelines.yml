@@ -5,28 +5,12 @@ pool:
   name: 'Linux_Agent'  # Your pool with Python 3.12.3
 
 steps:
-# 1. Create virtual environment (no sudo needed)
+# 1. Run the Python application directly with full path
 - script: |
-    python3.12 -m venv .venv --without-pip
-    source .venv/bin/activate
-    
-    # Install pip manually
-    curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-    python3.12 get-pip.py --user
-    rm get-pip.py
-  displayName: 'Create virtual environment'
-
-# 2. Install dependencies and run app
-- script: |
-    source .venv/bin/activate
-    cd app  # or your correct path
-    
-    # Install requirements
-    python3.12 -m pip install -r requirements.txt
-    
-    # Run application
-    python3.12 main.py
-  displayName: 'Run FastAPI application'
+    # Use system Python (3.12.3) with user installs
+    python3.12 -m pip install --user -r Microservice_Deployment_Assigment_1/app/requirements.txt
+    python3.12 Microservice_Deployment_Assigment_1/app/main.py
+  displayName: 'Run Python application'
 
 # 2. Docker build (only if you need it)
 - task: Docker@2
