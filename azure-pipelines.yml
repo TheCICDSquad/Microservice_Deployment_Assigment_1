@@ -1,13 +1,11 @@
 trigger:
-- main  # or your main branch name
+- main
 
 variables:
-  # Name of the Docker image to build
   imageName: 'your-python-app'
-  # Docker registry service connection (set this in Azure DevOps)
   dockerRegistryServiceConnection: 'your-docker-registry-service-connection'
-  # Tag to give the Docker image
   tag: '$(Build.BuildId)'
+  pythonVersion: '3.10'  # Using a stable LTS version instead of 3.x
 
 pool:
   name: 'Linux_Agent'
@@ -15,8 +13,19 @@ pool:
 steps:
 - task: UsePythonVersion@0
   inputs:
-    versionSpec: '3.x'  # specify your Python version (3.7, 3.8, etc.)
+    versionSpec: '$(pythonVersion)'
     addToPath: true
+    architecture: 'x64'
+
+# Alternative Python installation if the above fails
+- script: |
+    sudo apt-get update
+    sudo apt-get install -y python$(pythonVersion) python$(pythonVersion)-dev python3-pip
+    sudo update-alternatives --install /usr/bin/python python /usr/bin/python$(pythonVersion) 1
+    sudo update-alternatives --set python /usr/bin/python$(pythonVersion)
+    python --version
+  displayName: 'Install Python (fallback)'
+  condition: failed()
 
 - script: |
     python -m pip install --upgrade pip
@@ -24,7 +33,7 @@ steps:
   displayName: 'Install dependencies'
 
 - script: |
-    python -m pytest  # or your test command
+    python -m pytest
   displayName: 'Run tests'
 
 - task: Docker@2
@@ -32,7 +41,7 @@ steps:
   inputs:
     command: 'build'
     repository: $(imageName)
-    dockerfile: '**/Dockerfile'  # path to your Dockerfile if not in root
+    dockerfile: '**/Dockerfile'
     tags: |
       $(tag)
       latest
