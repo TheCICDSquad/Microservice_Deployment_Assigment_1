@@ -11,7 +11,12 @@ variables:
   APP_PATH: 'Microservice_Deployment_Assigment_1/app'
 
 steps:
-  - checkout: self   # 
+  - checkout: self   # Required to clone your GitHub repo into the agent workspace
+
+  - script: |
+      echo "🔍 Current working directory: $(Build.SourcesDirectory)"
+      ls -R
+    displayName: 'DEBUG: List all files in repo'
 
   - script: |
       apt update
@@ -21,7 +26,7 @@ steps:
     displayName: 'Install Python and pip (No venv)'
 
   - script: |
-      cd Microservice_Deployment_Assigment_1/app
+      cd $(APP_PATH)
       pip3 install -r requirements.txt --break-system-packages
     displayName: 'Install Python dependencies (Global)'
 
@@ -32,7 +37,7 @@ steps:
     displayName: 'Login to Docker Hub'
     inputs:
       command: login
-      containerRegistry: 'dockerHubService'
+      containerRegistry: 'dockerHubService'  # Must be configured in Azure DevOps > Service Connections
 
   - script: |
       cd $(DOCKERFILE_PATH)
