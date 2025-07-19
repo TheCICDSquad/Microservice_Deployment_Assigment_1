@@ -1,25 +1,26 @@
 trigger:
-  - main  # or your branch name
+  - main
 
 pool:
-  name: Linux_Agent  # Your self-hosted agent name
+  name: Linux_Agent  # Self-hosted agent name
 
 variables:
   DOCKER_IMAGE_NAME: fastapi-app
   DOCKER_TAG: latest
-  DOCKER_REGISTRY: sashangykumar456  # Docker Hub username
+  DOCKER_REGISTRY: sashangykumar456  # your Docker Hub username
 
 steps:
   - checkout: self
 
   - script: |
-      echo "✅ Listing files to debug"
-      ls -al
-      echo "---"
-      ls -al app
-    displayName: 'Debug File Listing'
+      echo "🐳 Building Docker image using ./app/DockerFile"
+      docker build -f ./app/DockerFile -t $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):$(DOCKER_TAG) ./app
+    displayName: 'Build Docker Image'
 
   - script: |
-      echo "🐳 Building Docker image using app/DockerFile"
-      docker build -f app/DockerFile -t $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):$(DOCKER_TAG) app
-    displayName: 'Build Docker Image'
+      echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USERNAME) --password-stdin
+    displayName: 'Docker Login'
+
+  - script: |
+      docker push $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):$(DOCKER_TAG)
+    displayName: 'Push Docker Image to Docker Hub'
