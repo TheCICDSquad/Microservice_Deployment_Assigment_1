@@ -1,27 +1,40 @@
 trigger:
-  - main
+  branches:
+    include:
+      - main  # or your main branch name
 
 pool:
   name: Linux_Agent
 
 variables:
-  imageName: https://hub.docker.com/repository/docker/sashangykumar456/python
-  tag: latest
+  imageName: sashangykumar456/python
+  imageTag: latest
+  imageFullName: $(imageName):$(imageTag)
 
-steps:
-  - script: |
-      echo "Showing repo structure:"
-      ls -la
-    displayName: "Debug Repo Structure"
+stages:
+  - stage: BuildAndPush
+    jobs:
+      - job: BuildAndPushDockerImage
+        steps:
 
-  - script: |
-      echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USERNAME) --password-stdin
-    displayName: "Docker Login"
+          # Optional: Show current directory structure for debugging
+          - script: |
+              echo "Showing repo structure:"
+              ls -R
+            displayName: "Debug: List files"
 
-  - script: |
-      docker build -t $(imageName):$(tag) .
-    displayName: "Build Docker Image"
+          # Login to Docker Hub
+          - script: |
+              echo "$(DOCKER_PASSWORD)" | docker login -u "$(DOCKER_USERNAME)" --password-stdin
+            displayName: "Docker Login"
 
-  - script: |
-      docker push $(imageName):$(tag)
-    displayName: "Push Docker Image"
+          # Build Docker image (assumes Dockerfile is under /Microservice_Deployment_Assigment_1/app/)
+          - script: |
+              cd Microservice_Deployment_Assigment_1/app/
+              docker build -t $(imageFullName) .
+            displayName: "Build Docker Image"
+
+          # Push Docker image to Docker Hub
+          - script: |
+              docker push $(imageFullName)
+            displayName: "Push Docker Image"
