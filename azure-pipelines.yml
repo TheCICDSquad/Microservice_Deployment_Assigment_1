@@ -1,40 +1,50 @@
 trigger:
   branches:
     include:
-      - main  # or your main branch name
+      - main
 
 pool:
-  name: Linux_Agent
+  vmImage: 'ubuntu-latest'
 
 variables:
-  imageName: sashangykumar456/python
-  imageTag: latest
-  imageFullName: $(imageName):$(imageTag)
+  imageName: 'sashangykumar456/python'
+  tag: 'latest'
+  imageFullName: 'sashangykumar456/python:latest'
 
 stages:
-  - stage: BuildAndPush
+  - stage: Build
+    displayName: 'Build Stage'
     jobs:
-      - job: BuildAndPushDockerImage
+      - job: BuildJob
+        displayName: 'Build Docker Image'
         steps:
 
-          # Optional: Show current directory structure for debugging
-          - script: |
-              echo "Showing repo structure:"
-              ls -R
-            displayName: "Debug: List files"
+          - checkout: self
 
-          # Login to Docker Hub
-          - script: |
-              echo "$(DOCKER_PASSWORD)" | docker login -u "$(DOCKER_USERNAME)" --password-stdin
-            displayName: "Docker Login"
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: '3.x'
+              addToPath: true
 
-          # Build Docker image (assumes Dockerfile is under /Microservice_Deployment_Assigment_1/app/)
           - script: |
-              cd Microservice_Deployment_Assigment_1/app/
-              docker build -t $(imageFullName) .
-            displayName: "Build Docker Image"
+              echo "Current directory:"
+              pwd
+              echo "Files in app directory:"
+              ls -l app/
+            displayName: 'Debug: Show Directory Contents'
 
-          # Push Docker image to Docker Hub
           - script: |
+              pip install -r app/requirements.txt
+            displayName: 'Install Python Dependencies'
+
+          - script: |
+              docker build -t $(imageFullName) ./app
+            displayName: 'Build Docker Image'
+
+          - script: |
+              echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USERNAME) --password-stdin
               docker push $(imageFullName)
-            displayName: "Push Docker Image"
+            displayName: 'Push Docker Image'
+            env:
+              DOCKER_USERNAME: $(DOCKER_USERNAME)
+              DOCKER_PASSWORD: $(DOCKER_PASSWORD)
