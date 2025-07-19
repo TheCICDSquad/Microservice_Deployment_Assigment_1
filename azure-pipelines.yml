@@ -7,7 +7,7 @@ pool:
 variables:
   DOCKER_IMAGE_NAME: fastapi-app
   DOCKER_TAG: latest
-  DOCKER_REGISTRY: sashangykumar456  # replace if pushing to Docker Hub
+  DOCKER_REGISTRY: sashangykumar456  # Docker Hub username
 
 steps:
   - checkout: self
@@ -15,23 +15,20 @@ steps:
   - script: |
       echo "🛠️ Changing to app directory..."
       cd app
-      echo "🐳 Building Docker image..."
-      docker build -t $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):$(DOCKER_TAG) .
+      echo "🐳 Building Docker image using custom DockerFile..."
+      docker build -f DockerFile -t $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):$(DOCKER_TAG) .
     displayName: 'Build Docker Image'
 
-  # Optional: Docker login if pushing to Docker Hub
   - script: |
       echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USERNAME) --password-stdin
     displayName: 'Docker Login'
     condition: and(succeeded(), ne(variables['DOCKER_USERNAME'], ''))
 
-  # Optional: Push to Docker Hub
   - script: |
       docker push $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):$(DOCKER_TAG)
     displayName: 'Push Docker Image'
     condition: and(succeeded(), ne(variables['DOCKER_USERNAME'], ''))
 
-  # Optional: Run Container (for test purpose only)
   - script: |
       docker run -d -p 8000:8000 $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):$(DOCKER_TAG)
     displayName: 'Run Docker Container'
