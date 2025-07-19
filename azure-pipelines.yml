@@ -1,107 +1,44 @@
 trigger:
-- main
-
-variables:
-  pythonVersion: '3.10'  # Stable Python version
-  appDirectory: 'Microservice_Deployment_Assigment_1/app'
-  dockerImageName: 'your-python-app'
+  branches:
+    include:
+      - main  # or your working branch
 
 pool:
-  name: 'Linux_Agent'
+  name: Linux_Agent
 
-steps:
-# Step 1: Install Python with proper dependencies
-- script: |
-    if command -v python3 &> /dev/null; then
-      echo "Using existing Python: $(python3 --version)"
-      python3 -m pip install --upgrade pip
-      exit 0
-    else
-      exit 1
-    fi
-  displayName: 'Try existing Python'
-  continueOnError: true
+variables:
+  dockerRegistryServiceConnection: '<your-service-connection-name>'  # Azure container registry connection
+  imageRepository: 'my-python-app'   # Name of your Docker image
+  containerRegistry: '<your-registry-name>.azurecr.io'  # Your Azure Container Registry name
+  tag: '$(Build.BuildId)'
 
-# 2. If no Python exists, install minimal Python 3.10 from deadsnakes PPA (Ubuntu)
-- script: |
-    sudo apt-get update
-    sudo apt-get install -y software-properties-common
-    sudo add-apt-repository ppa:deadsnakes/ppa -y
-    sudo apt-get update
-    sudo apt-get install -y python3.10 python3.10-venv python3-pip
-    python3.10 --version
-  displayName: 'Install Python 3.10 via PPA'
-  condition: failed()
-  env:
-    DEBIAN_FRONTEND: noninteractive
+stages:
+- stage: Build
+  displayName: Build and Package
+  jobs:
+  - job: BuildDockerImage
+    displayName: Build Docker Image
+    steps:
 
-# 3. Alternative: Install using Python binary (no compilation needed)
-- script: |
-    wget https://www.python.org/ftp/python/3.10.13/Python-3.10.13.tar.xz
-    tar xf Python-3.10.13.tar.xz
-    cd Python-3.10.13
-    ./configure --enable-optimizations --with-ensurepip=install
-    make
-    sudo make altinstall
-    python3.10 --version
-  displayName: 'Install Python from source'
-  condition: failed()
-  env:
-    DEBIAN_FRONTEND: noninteractive
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.x'
+        addToPath: true
 
-# 4. Final fallback: Use deadsnakes minimal installation
-- script: |
-    sudo apt-get update
-    sudo apt-get install -y python3.10-minimal python3-pip
-    python3.10 --version
-  displayName: 'Install Python 3.10 minimal'
-  condition: failed()
-  env:
-    DEBIAN_FRONTEND: noninteractive
+    - task: PythonScript@0
+      displayName: Install Dependencies
+      inputs:
+        scriptSource: 'inline'
+        script: |
+          cd Microservice_Deployment_Assigment_1/app/
+          pip install -r requirements.txt
 
-# Verify Python installation
-- script: |
-    python3.10 --version || python3 --version
-    python3 -m pip install --upgrade pip
-  displayName: 'Verify Python'
-
-# Rest of your pipeline...
-- script: |
-    cd Microservice_Deployment_Assigment_1/app
-    pip install -r requirements.txt
-    python main.py
-  displayName: 'Run application'
-
-# Step 2: Install application dependencies
-- script: |
-    cd $(appDirectory)
-    pip install -r requirements.txt
-  displayName: 'Install Python dependencies'
-
-# Step 3: Run the application (modify as needed)
-- script: |
-    cd $(appDirectory)
-    python main.py  # or your entrypoint script
-  displayName: 'Run Python application'
-
-# Step 4: Build Docker image (if needed)
-- task: Docker@2
-  displayName: 'Build Docker image'
-  inputs:
-    command: 'build'
-    repository: $(dockerImageName)
-    dockerfile: '$(appDirectory)/Dockerfile'  # assuming Dockerfile is in app dir
-    tags: |
-      latest
-      $(Build.BuildId)
-
-# Step 5: Push Docker image (optional)
-- task: Docker@2
-  displayName: 'Push Docker image'
-  inputs:
-    command: 'push'
-    repository: $(dockerImageName)
-    tags: |
-      latest
-      $(Build.BuildId)
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    # - task: Docker@2
+    #   displayName: Build and Push Docker Image
+    #   inputs:
+    #     containerRegistry: '$(dockerRegistryServiceConnection)'
+    #     repository: '$(imageRepository)'
+    #     command: 'buildAndPush'
+    #     Dockerfile: 'Microservice_Deployment_Assigment_1/app/Dockerfile'
+    #     tags: |
+    #       $(tag)
