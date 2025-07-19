@@ -5,25 +5,12 @@ pool:
   name: 'Linux_Agent'  # Your pool with Python 3.12.3
 
 steps:
-# 1. Install required system packages
 - script: |
-    sudo apt-get update
-    sudo apt-get install -y python3.12-venv
-  displayName: 'Install Python venv module'
-
-# 2. Create and use virtual environment
-- script: |
-    python3.12 -m venv .venv
+    python3 -m venv .venv
     source .venv/bin/activate
-    python -m pip install --upgrade pip
-    
-    # Navigate to app directory and install requirements
     cd Microservice_Deployment_Assigment_1/app
     pip install -r requirements.txt
     python main.py
-  displayName: 'Run application in virtual environment'
-  env:
-    DEBIAN_FRONTEND: noninteractive
 
 # 2. Docker build (only if you need it)
 - task: Docker@2
