@@ -8,10 +8,20 @@ steps:
 - checkout: self  # Ensures your code is properly checked out
 
 - script: |
-    cd Microservice_Deployment_Assigment_1/app/
-    pip3 install -r requirements.txt
+    cd $(Build.SourcesDirectory)/Microservice_Deployment_Assigment_1/app/
+    
+    echo "Creating virtual environment..."
+    python3 -m venv venv
+    source venv/bin/activate
+
+    echo "Installing dependencies..."
+    pip install --upgrade pip
+    pip install -r requirements.txt
+
+    echo "Running FastAPI app..."
     uvicorn main:app --host 0.0.0.0 --port 8000
   displayName: 'Run FastAPI application'
+
 
 # # 3. Setup Python environment
 # - script: |
