@@ -12,13 +12,17 @@ pool:
 steps:
 # Step 1: Install Python with proper dependencies
 - script: |
-    sudo apt-get update
-    sudo apt-get install -y python$(pythonVersion) python$(pythonVersion)-dev python3-pip
-    sudo update-alternatives --install /usr/bin/python python /usr/bin/python$(pythonVersion) 1
-    sudo update-alternatives --set python /usr/bin/python$(pythonVersion)
+    # Install Python locally (no sudo needed)
+    wget https://www.python.org/ftp/python/3.10.13/Python-3.10.13.tgz
+    tar xzf Python-3.10.13.tgz
+    cd Python-3.10.13
+    ./configure --prefix=$(Agent.ToolsDirectory)/python-3.10.13
+    make
+    make install
+    export PATH=$(Agent.ToolsDirectory)/python-3.10.13/bin:$PATH
     python -m pip install --upgrade pip
     python --version
-  displayName: 'Install Python $(pythonVersion)'
+  displayName: 'Install Python locally'
 
 # Step 2: Install application dependencies
 - script: |
