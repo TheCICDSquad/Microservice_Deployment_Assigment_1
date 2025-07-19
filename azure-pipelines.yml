@@ -1,51 +1,23 @@
 trigger:
 - main
 
-variables:
-  appDirectory: 'Microservice_Deployment_Assigment_1/app'
-  dockerImageName: 'your-python-app'
-
 pool:
   name: 'Linux_Agent'  # Your pool with Python 3.12.3
 
 steps:
-# Step 1: Verify and use existing Python
+# 1. Install requirements and run app
 - script: |
-    echo "Using pre-installed Python:"
-    python3 --version
-    python3 -m pip install --upgrade pip
-  displayName: 'Verify Python installation'
-
-# Step 2: Install dependencies
-- script: |
-    cd $(appDirectory)
+    cd Microservice_Deployment_Assigment_1/app
+    python -m pip install --upgrade pip
     pip install -r requirements.txt
-  displayName: 'Install dependencies'
+    python main.py
+  displayName: 'Run Python application'
 
-# Step 3: Run your application
-- script: |
-    cd $(appDirectory)
-    python main.py  # or your specific entry point
-  displayName: 'Run application'
-
-# Step 4: Build Docker image
+# 2. Docker build (only if you need it)
 - task: Docker@2
   displayName: 'Build Docker image'
   inputs:
     command: 'build'
-    repository: $(dockerImageName)
-    dockerfile: '$(appDirectory)/Dockerfile'
-    tags: |
-      latest
-      $(Build.BuildId)
-
-# Step 5: Push Docker image (optional)
-- task: Docker@2
-  displayName: 'Push Docker image'
-  inputs:
-    command: 'push'
-    repository: $(dockerImageName)
-    tags: |
-      latest
-      $(Build.BuildId)
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    repository: 'your-app-name'
+    dockerfile: 'Microservice_Deployment_Assigment_1/app/Dockerfile'
+    tags: 'latest'
