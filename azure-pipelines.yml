@@ -1,15 +1,15 @@
 trigger:
   branches:
     include:
-      - main  # or your working branch
+      - main  # Or your working branch
 
 pool:
   name: Linux_Agent
 
 variables:
-  dockerRegistryServiceConnection: '<your-service-connection-name>'  # Azure container registry connection
-  imageRepository: 'my-python-app'   # Name of your Docker image
-  containerRegistry: '<your-registry-name>.azurecr.io'  # Your Azure Container Registry name
+  dockerRegistryServiceConnection: 'dockerHubService'  # Azure DevOps service connection to ACR
+  imageRepository: 'my-python-app'   # Docker image name
+  containerRegistry: '<your-registry-name>.azurecr.io'  # ACR hostname
   tag: '$(Build.BuildId)'
 
 stages:
@@ -20,25 +20,22 @@ stages:
     displayName: Build Docker Image
     steps:
 
-    - task: UsePythonVersion@0
-      inputs:
-        versionSpec: '3.x'
-        addToPath: true
+    - script: |
+        python3 --version
+        pip3 --version
+      displayName: 'Check system Python version'
 
-    - task: PythonScript@0
-      displayName: Install Dependencies
-      inputs:
-        scriptSource: 'inline'
-        script: |
-          cd Microservice_Deployment_Assigment_1/app/
-          pip install -r requirements.txt
+    - script: |
+        cd Microservice_Deployment_Assigment_1/app/
+        pip3 install -r requirements.txt
+      displayName: 'Install Python Dependencies'
 
-    # - task: Docker@2
-    #   displayName: Build and Push Docker Image
-    #   inputs:
-    #     containerRegistry: '$(dockerRegistryServiceConnection)'
-    #     repository: '$(imageRepository)'
-    #     command: 'buildAndPush'
-    #     Dockerfile: 'Microservice_Deployment_Assigment_1/app/Dockerfile'
-    #     tags: |
-    #       $(tag)
+    - task: Docker@2
+      displayName: 'Build and Push Docker Image'
+      inputs:
+        containerRegistry: '$(dockerRegistryServiceConnection)'
+        repository: '$(imageRepository)'
+        command: 'buildAndPush'
+        Dockerfile: 'Microservice_Deployment_Assigment_1/app/Dockerfile'
+        tags: |
+          $(tag)
