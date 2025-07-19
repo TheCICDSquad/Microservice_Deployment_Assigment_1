@@ -8,27 +8,25 @@ variables:
   DOCKER_REPO: 'sashangykumar456/petclinic'
   IMAGE_TAG: '$(Build.BuildId)'
   DOCKERFILE_PATH: 'Microservice_Deployment_Assigment_1'
-  APP_PATH: 'Microservice_Deployment_Assigment_1/app/*'
-
+  APP_PATH: 'Microservice_Deployment_Assigment_1/app'
 
 steps:
-  - checkout: self   # Required to clone your GitHub repo into the agent workspace
+  - checkout: self
 
   - script: |
-      echo "🔍 Current working directory: $(Build.SourcesDirectory)"
-      ls -R
-    displayName: 'DEBUG: List all files in repo'
+      echo "Checking working directory contents..."
+      ls -laR $(Build.SourcesDirectory)
+    displayName: 'DEBUG: List repo structure'
 
   - script: |
-      apt update
-      apt install -y python3 python3-pip
+      sudo apt update && sudo apt install -y python3 python3-pip
       python3 --version
       pip3 --version
-    displayName: 'Install Python and pip (No venv)'
+    displayName: 'Install Python via APT'
 
   - script: |
-      cd $(APP_PATH)
-      pip3 install -r requirements.txt --break-system-packages
+      cd $(Build.SourcesDirectory)/$(APP_PATH)
+      pip3 install --user -r requirements.txt
     displayName: 'Install Python dependencies (Global)'
 
   - task: DockerInstaller@0
@@ -38,10 +36,10 @@ steps:
     displayName: 'Login to Docker Hub'
     inputs:
       command: login
-      containerRegistry: 'dockerHubService'  # Must be configured in Azure DevOps > Service Connections
+      containerRegistry: 'dockerHubService'
 
   - script: |
-      cd $(DOCKERFILE_PATH)
+      cd $(Build.SourcesDirectory)/$(DOCKERFILE_PATH)
       docker build -t $(DOCKER_REPO):$(IMAGE_TAG) .
     displayName: 'Build Docker Image'
 
