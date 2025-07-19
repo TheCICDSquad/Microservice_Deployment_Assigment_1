@@ -5,12 +5,38 @@ pool:
   name: 'Linux_Agent'  # Your pool with Python 3.12.3
 
 steps:
+# 1. Verify repository structure
 - script: |
-    python3 -m venv .venv
-    source .venv/bin/activate
-    cd Microservice_Deployment_Assigment_1/app
-    pip install -r requirements.txt
-    python main.py
+    ls -R
+  displayName: 'Check repository structure'
+
+# 2. Run application (adjust path according to actual structure)
+- script: |
+    # Find and use existing Python (3.12.3)
+    python3.12 --version
+    
+    # Option 1: If files are in root/Microservice_Deployment_Assigment_1/app/
+    if [ -d "Microservice_Deployment_Assigment_1/app" ]; then
+      cd Microservice_Deployment_Assigment_1/app
+      python3.12 -m pip install -r requirements.txt --user
+      python3.12 main.py
+    
+    # Option 2: If files are directly in root/app/
+    elif [ -d "app" ]; then
+      cd app
+      python3.12 -m pip install -r requirements.txt --user
+      python3.12 main.py
+    
+    # Option 3: If files are in root/
+    elif [ -f "requirements.txt" ]; then
+      python3.12 -m pip install -r requirements.txt --user
+      python3.12 main.py
+    
+    else
+      echo "##[error]Could not find application files"
+      exit 1
+    fi
+  displayName: 'Run Python application'
 
 # 2. Docker build (only if you need it)
 - task: Docker@2
