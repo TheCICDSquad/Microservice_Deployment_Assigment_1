@@ -8,17 +8,11 @@ steps:
 - checkout: self  # Ensures your code is properly checked out
 
 - script: |
-    # Create virtual environment
-    python3.12 -m venv .venv
-    source .venv/bin/activate
-    
-    # Install dependencies directly (skip requirements.txt if missing)
-    pip install fastapi uvicorn
-    
-    # Run application
-    cd app
-    python main.py
-  displayName: 'Run FastAPI Application'
+    cd Microservice_Deployment_Assigment_1/app/
+    pip3 install -r requirements.txt
+    uvicorn main:app --host 0.0.0.0 --port 8000
+  displayName: 'Run FastAPI application'
+
 # # 3. Setup Python environment
 # - script: |
 #     # Create virtual environment
