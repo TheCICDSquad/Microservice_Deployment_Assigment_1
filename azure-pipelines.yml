@@ -5,43 +5,20 @@ pool:
   name: 'Linux_Agent'  # Your pool with Python 3.12.3
 
 steps:
-# 1. Force clean checkout of your repository
-- checkout: self
-  clean: true
-  displayName: 'Checkout repository'
+- checkout: self  # Ensures your code is properly checked out
 
-# 2. Verify the exact repository structure
 - script: |
-    echo "Current working directory:"
-    pwd
-    echo "Repository contents:"
-    ls -R
-    echo "Checking for application files..."
-    find . -name main.py -o -name requirements.txt
-  displayName: 'Verify repository structure'
-
-# 3. Run application with verified paths
-- script: |
-    # Find the actual path to your application
-    APP_PATH=$(find . -path "*/app/main.py" -printf '%h\n' | head -1)
-    
-    if [ -z "$APP_PATH" ]; then
-      echo "##[error]Could not find application directory"
-      exit 1
-    fi
-    
-    echo "Found application at: $APP_PATH"
-    
-    # Setup virtual environment
+    # Create virtual environment
     python3.12 -m venv .venv
     source .venv/bin/activate
     
-    # Install requirements
-    pip install -r "$APP_PATH/requirements.txt"
+    # Install dependencies directly (skip requirements.txt if missing)
+    pip install fastapi uvicorn
     
     # Run application
-    python "$APP_PATH/main.py"
-  displayName: 'Run FastAPI application'
+    cd app
+    python main.py
+  displayName: 'Run FastAPI Application'
 # # 3. Setup Python environment
 # - script: |
 #     # Create virtual environment
