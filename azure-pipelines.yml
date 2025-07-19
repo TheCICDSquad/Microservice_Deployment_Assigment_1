@@ -13,10 +13,8 @@ steps:
   - checkout: self
 
   - script: |
-      echo "🛠️ Changing to app directory..."
-      cd app
-      echo "🐳 Building Docker image using custom DockerFile..."
-      docker build -f DockerFile -t $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):$(DOCKER_TAG) .
+      echo "🐳 Building Docker image using app/DockerFile..."
+      docker build -f app/DockerFile -t $(DOCKER_REGISTRY)/$(DOCKER_IMAGE_NAME):$(DOCKER_TAG) app
     displayName: 'Build Docker Image'
 
   - script: |
