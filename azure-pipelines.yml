@@ -1,13 +1,7 @@
 trigger:
-- main  # or your main branch name
+- main
 
 variables:
-  # Name of the Docker image to build
-  imageName: 'your-python-app'
-  # Docker registry service connection (set this in Azure DevOps)
-  dockerRegistryServiceConnection: 'dockerHubService'
-  # Tag to give the Docker image
-  tag: '$(Build.BuildId)'
   pythonVersion: '3.10'  # Using stable LTS version
   appDirectory: 'Microservice_Deployment_Assigment_1/app'
 
@@ -15,36 +9,66 @@ pool:
   name: 'Linux_Agent'
 
 steps:
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: '3.x'  # specify your Python version (3.7, 3.8, etc.)
-    addToPath: true
-
+# Step 1: Try system Python first
 - script: |
-    python -m pip install --upgrade pip
+    # Check for existing Python installations
+    if command -v python3 &> /dev/null; then
+      echo "Using existing Python: $(python3 --version)"
+      python3 -m pip install --upgrade pip
+      exit 0
+    else
+      exit 1
+    fi
+  displayName: 'Check for existing Python'
+  continueOnError: true
+
+# Step 2: Install Python from deadsnakes PPA (Ubuntu)
+- script: |
+    sudo apt-get update
+    sudo apt-get install -y software-properties-common
+    sudo add-apt-repository ppa:deadsnakes/ppa -y
+    sudo apt-get update
+    sudo apt-get install -y python$(pythonVersion) python$(pythonVersion)-venv python3-pip
+    python$(pythonVersion) --version
+  displayName: 'Install Python via PPA'
+  condition: failed()
+  env:
+    DEBIAN_FRONTEND: noninteractive
+
+# Step 3: Fallback to manual download (no compilation)
+- script: |
+    wget https://www.python.org/ftp/python/3.10.13/Python-3.10.13.tar.xz
+    tar xf Python-3.10.13.tar.xz
+    cd Python-3.10.13
+    ./configure --enable-optimizations --with-ensurepip=install
+    make
+    sudo make altinstall
+    python3.10 --version
+  displayName: 'Install Python from source'
+  condition: failed()
+  env:
+    DEBIAN_FRONTEND: noninteractive
+
+# Step 4: Verify Python installation
+- script: |
+    python$(pythonVersion) --version || python3 --version
+    python3 -m pip install --upgrade pip
+  displayName: 'Verify Python'
+
+# Step 5: Install dependencies and run application
+- script: |
+    cd $(appDirectory)
     pip install -r requirements.txt
-  displayName: 'Install dependencies'
+    python main.py
+  displayName: 'Run application'
 
-- script: |
-    python -m pytest  # or your test command
-  displayName: 'Run tests'
-
+# Optional Docker steps if needed
 - task: Docker@2
   displayName: 'Build Docker image'
   inputs:
     command: 'build'
-    repository: $(imageName)
-    dockerfile: '**/Dockerfile'  # path to your Dockerfile if not in root
+    repository: 'your-app-name'
+    dockerfile: '$(appDirectory)/Dockerfile'
     tags: |
-      $(tag)
       latest
-
-- task: Docker@2
-  displayName: 'Push Docker image'
-  inputs:
-    command: 'push'
-    repository: $(imageName)
-    tags: |
-      $(tag)
-      latest
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  condition: succeeded()
