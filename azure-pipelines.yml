@@ -5,44 +5,23 @@ pool:
   name: Linux_Agent
 
 variables:
-  DOCKER_REPO: 'sashangykumar456/petclinic'
-  IMAGE_TAG: '$(Build.BuildId)'
-  DOCKERFILE_PATH: 'Microservice_Deployment_Assigment_1'
-  APP_PATH: 'Microservice_Deployment_Assigment_1/app'
+  imageName: https://hub.docker.com/repository/docker/sashangykumar456/python
+  tag: latest
 
 steps:
-  - checkout: self
+  - script: |
+      echo "Showing repo structure:"
+      ls -la
+    displayName: "Debug Repo Structure"
 
   - script: |
-      echo "Checking working directory contents..."
-      ls -laR $(Build.SourcesDirectory)
-    displayName: 'DEBUG: List repo structure'
+      echo $(DOCKER_PASSWORD) | docker login -u $(DOCKER_USERNAME) --password-stdin
+    displayName: "Docker Login"
 
   - script: |
-      sudo apt update && sudo apt install -y python3 python3-pip
-      python3 --version
-      pip3 --version
-    displayName: 'Install Python via APT'
+      docker build -t $(imageName):$(tag) .
+    displayName: "Build Docker Image"
 
   - script: |
-      cd $(Build.SourcesDirectory)/$(APP_PATH)
-      pip3 install --user -r requirements.txt
-    displayName: 'Install Python dependencies (Global)'
-
-  - task: DockerInstaller@0
-    displayName: 'Install Docker CLI'
-
-  - task: Docker@2
-    displayName: 'Login to Docker Hub'
-    inputs:
-      command: login
-      containerRegistry: 'dockerHubService'
-
-  - script: |
-      cd $(Build.SourcesDirectory)/$(DOCKERFILE_PATH)
-      docker build -t $(DOCKER_REPO):$(IMAGE_TAG) .
-    displayName: 'Build Docker Image'
-
-  - script: |
-      docker push $(DOCKER_REPO):$(IMAGE_TAG)
-    displayName: 'Push Docker Image to Docker Hub'
+      docker push $(imageName):$(tag)
+    displayName: "Push Docker Image"
