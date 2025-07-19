@@ -12,17 +12,65 @@ pool:
 steps:
 # Step 1: Install Python with proper dependencies
 - script: |
-    # Install Python locally (no sudo needed)
-    wget https://www.python.org/ftp/python/3.10.13/Python-3.10.13.tgz
-    tar xzf Python-3.10.13.tgz
+    if command -v python3 &> /dev/null; then
+      echo "Using existing Python: $(python3 --version)"
+      python3 -m pip install --upgrade pip
+      exit 0
+    else
+      exit 1
+    fi
+  displayName: 'Try existing Python'
+  continueOnError: true
+
+# 2. If no Python exists, install minimal Python 3.10 from deadsnakes PPA (Ubuntu)
+- script: |
+    sudo apt-get update
+    sudo apt-get install -y software-properties-common
+    sudo add-apt-repository ppa:deadsnakes/ppa -y
+    sudo apt-get update
+    sudo apt-get install -y python3.10 python3.10-venv python3-pip
+    python3.10 --version
+  displayName: 'Install Python 3.10 via PPA'
+  condition: failed()
+  env:
+    DEBIAN_FRONTEND: noninteractive
+
+# 3. Alternative: Install using Python binary (no compilation needed)
+- script: |
+    wget https://www.python.org/ftp/python/3.10.13/Python-3.10.13.tar.xz
+    tar xf Python-3.10.13.tar.xz
     cd Python-3.10.13
-    ./configure --prefix=$(Agent.ToolsDirectory)/python-3.10.13
+    ./configure --enable-optimizations --with-ensurepip=install
     make
-    make install
-    export PATH=$(Agent.ToolsDirectory)/python-3.10.13/bin:$PATH
-    python -m pip install --upgrade pip
-    python --version
-  displayName: 'Install Python locally'
+    sudo make altinstall
+    python3.10 --version
+  displayName: 'Install Python from source'
+  condition: failed()
+  env:
+    DEBIAN_FRONTEND: noninteractive
+
+# 4. Final fallback: Use deadsnakes minimal installation
+- script: |
+    sudo apt-get update
+    sudo apt-get install -y python3.10-minimal python3-pip
+    python3.10 --version
+  displayName: 'Install Python 3.10 minimal'
+  condition: failed()
+  env:
+    DEBIAN_FRONTEND: noninteractive
+
+# Verify Python installation
+- script: |
+    python3.10 --version || python3 --version
+    python3 -m pip install --upgrade pip
+  displayName: 'Verify Python'
+
+# Rest of your pipeline...
+- script: |
+    cd Microservice_Deployment_Assigment_1/app
+    pip install -r requirements.txt
+    python main.py
+  displayName: 'Run application'
 
 # Step 2: Install application dependencies
 - script: |
